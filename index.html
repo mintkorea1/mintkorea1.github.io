@@ -1,16 +1,14 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- [중요] 카카오톡/문자 썸네일(오픈 그래프) 설정 -->
     <meta property="og:type" content="website">
     <meta property="og:title" content="전준수 체육관 오픈행사 초대장">
     <meta property="og:description" content="30년 만의 새로운 시작, 자리를 빛내주세요.">
-    <meta property="og:image" content="이미지_경로_주소.jpg"> <!-- 실제 온라인에 올린 이미지 주소를 넣어야 합니다 -->
-    <meta property="og:url" content="실제_웹사이트_주소.html">
+    <meta property="og:image" content="https://raw.githubusercontent.com/mintkorea1/main/main/1777413097751.jpg"> 
+    <meta property="og:url" content="https://mintkorea.github.io/">
 
     <title>체육관 오픈행사 초대장</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -72,15 +70,11 @@
             position: relative; transition: all 0.3s ease;
         }
         
-        .img-container.empty { border: 2px dashed #cbd5e0; background: #f8fafc; cursor: pointer; }
         .img-container.filled { border: none; background: #000; cursor: zoom-in; }
 
         .img-container img {
-            width: 100%; height: 100%; object-fit: cover; display: none;
+            width: 100%; height: 100%; object-fit: cover; display: block;
         }
-        
-        .img-placeholder { text-align: center; color: #a0aec0; }
-        .img-placeholder i { font-size: 3rem; margin-bottom: 10px; }
 
         .copy-card {
             background: #f8fafc; padding: 20px; border-radius: 15px;
@@ -114,7 +108,6 @@
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: rgba(0,0,0,0.8); color: #fff; padding: 15px 30px; border-radius: 50px; display: none; z-index: 1000;
         }
-        .file-input { display: none; }
     </style>
 </head>
 <body>
@@ -123,36 +116,25 @@
     <div class="deco-top"></div>
     <div class="deco-bottom"></div>
 
-    <!-- 슬라이드 1 -->
     <div class="slide active">
         <span class="section-name">OPENING</span>
         <h1 class="title-main">체육관 오픈행사<br>초대합니다</h1>
-        <div class="img-container empty" id="container0" onclick="handleImageClick(0)">
-            <div class="img-placeholder" id="placeholder0">
-                <i class="fa-solid fa-camera"></i><br>관장님 사진을 선택하세요
-            </div>
-            <img id="img0" src="" alt="사진">
-            <input type="file" class="file-input" id="input0" accept="image/*" onchange="loadImage(event, 0)">
+        <div class="img-container filled" id="container0" onclick="handleImageClick(0)">
+            <img id="img0" src="https://raw.githubusercontent.com/mintkorea1/main/main/1777413097751.jpg" alt="관장님 사진">
         </div>
         <p class="desc-text"><span class="highlight">30년</span> 만에 다시 오픈합니다.</p>
         <div style="text-align: center; margin-top: 10px; color: #64748b; font-weight: 700;">전준수 올림</div>
     </div>
 
-    <!-- 슬라이드 2 -->
     <div class="slide">
         <span class="section-name">GREETINGS</span>
         <h1 class="title-main">귀한 발걸음<br>부탁드립니다</h1>
-        <div class="img-container empty" id="container1" onclick="handleImageClick(1)">
-            <div class="img-placeholder" id="placeholder1">
-                <i class="fa-solid fa-camera"></i><br>인사말 사진을 선택하세요
-            </div>
-            <img id="img1" src="" alt="사진">
-            <input type="file" class="file-input" id="input1" accept="image/*" onchange="loadImage(event, 1)">
+        <div class="img-container filled" id="container1" onclick="handleImageClick(1)">
+            <img id="img1" src="https://raw.githubusercontent.com/mintkorea1/main/main/1777413814839.jpg" alt="인사말 사진">
         </div>
         <p class="desc-text">많은 분들이 참여하시어<br>자리를 빛내주시면 감사하겠습니다.</p>
     </div>
 
-    <!-- 슬라이드 3 -->
     <div class="slide">
         <span class="section-name">INFORMATION</span>
         <h1 class="title-main">일시 및 장소</h1>
@@ -170,7 +152,6 @@
         </div>
     </div>
 
-    <!-- 슬라이드 4 -->
     <div class="slide">
         <span class="section-name">DIRECTIONS</span>
         <h1 class="title-main">오시는 길</h1>
@@ -180,16 +161,11 @@
             <p><b>7호선 광명사거리역 (8번 출구)</b></p>
             <p style="color: #64748b;">3번째 대원주유소 하차 후 맞은편으로 300m</p>
         </div>
-        <div class="img-container empty" id="container2" onclick="handleImageClick(2)">
-            <div class="img-placeholder" id="placeholder2">
-                <i class="fa-solid fa-map"></i><br>건물 사진이나 약도를 넣으세요
-            </div>
-            <img id="img2" src="" alt="약도">
-            <input type="file" class="file-input" id="input2" accept="image/*" onchange="loadImage(event, 2)">
+        <div class="img-container filled" id="container2" onclick="handleImageClick(2)">
+            <img id="img2" src="https://raw.githubusercontent.com/mintkorea1/main/main/1777414182423.jpg" alt="약도/건물">
         </div>
     </div>
 
-    <!-- 슬라이드 5 -->
     <div class="slide">
         <span class="section-name">THANKS</span>
         <h1 class="title-main">마음 전하실 곳</h1>
@@ -226,7 +202,6 @@
     const duration = 8000;
     let startTime = Date.now();
     let pausedTime = 0;
-    let hasImage = [false, false, false];
 
     function updateSlide() {
         slides.forEach(s => s.classList.remove('active'));
@@ -253,30 +228,8 @@
     }
 
     function handleImageClick(idx) {
-        if (hasImage[idx]) {
-            const imgSrc = document.getElementById('img' + idx).src;
-            openModal(imgSrc);
-        } else {
-            document.getElementById('input' + idx).click();
-        }
-    }
-
-    function loadImage(event, idx) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function() {
-            const img = document.getElementById('img' + idx);
-            const container = document.getElementById('container' + idx);
-            const placeholder = document.getElementById('placeholder' + idx);
-            img.src = reader.result;
-            img.style.display = 'block';
-            placeholder.style.display = 'none';
-            container.classList.remove('empty');
-            container.classList.add('filled');
-            hasImage[idx] = true;
-        }
-        reader.readAsDataURL(file);
+        const imgSrc = document.getElementById('img' + idx).src;
+        openModal(imgSrc);
     }
 
     function openModal(src) {
