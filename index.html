@@ -3,25 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>이미지 표 분석 v1.8</title>
+    <title>이미지 표 분석 v1.9</title>
     <style>
         :root { --primary: #4A90E2; --bg: #f4f7f6; }
         body { font-family: -apple-system, sans-serif; padding: 20px; background: var(--bg); }
         .card { background: white; padding: 24px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); max-width: 800px; margin: 0 auto; }
         button { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; }
         button:disabled { background: #ccc; }
-        #tableContainer { width: 100%; overflow-x: auto; margin-top: 25px; }
-        table { width: 100%; border-collapse: collapse; border: 1px solid #ddd; }
+        #tableContainer { width: 100%; overflow-x: auto; margin-top: 25px; border: 1px solid #ddd; }
+        table { width: 100%; border-collapse: collapse; }
         th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>📊 이미지 표 분석 변환기 (v1.8)</h2>
+    <h2>📊 이미지 표 분석 변환기 (v1.9)</h2>
     <input type="file" id="imageInput" accept="image/*" style="margin:20px 0; width:100%;">
     <button id="convertBtn" onclick="runAnalysis()">AI 분석 시작</button>
-    <div id="status" style="margin-top:15px; text-align:center; font-weight:bold; color:#4A90E2;"></div>
+    <div id="status" style="margin-top:15px; text-align:center; font-weight:bold;"></div>
     <div id="tableContainer"></div>
 </div>
 
@@ -34,54 +34,60 @@
 
         if (!fileInput.files[0]) return alert("이미지 파일을 선택하세요.");
 
-        // 💡 [중요] 리퍼러 제한(image_cd6fab.png)을 건 그 키를 넣으세요.
+        // 💡 API 키를 여기에 정확히 입력하세요.
         const API_KEY = "AIzaSyCq2FeS2HfHFOSsHCmXPAzkDmLebb_ZOO0";
         
-        // 주소를 v1으로 강제 고정하여 v1beta 404 에러를 원천 봉쇄합니다.
-        const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+        // [경로 수정] v1에서 찾지 못하는 문제를 해결하기 위해 v1beta 경로를 사용합니다.
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
         btn.disabled = true;
-        status.innerText = "⌛ 구글 서버에 직접 연결 중...";
+        status.innerText = "⌛ 데이터 처리 중...";
         container.innerHTML = "";
 
         try {
             const file = fileInput.files[0];
-            const reader = new FileReader();
-            
-            reader.onload = async () => {
-                const base64Data = reader.result.split(',')[1];
+            const base64Data = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.readAsDataURL(file);
+            });
 
-                const payload = {
-                    contents: [{
-                        parts: [
-                            { text: "이미지의 표 데이터를 추출해서 HTML <table> 구조로 응답해줘. 설명 없이 코드만." },
-                            { inlineData: { mimeType: file.type, data: base64Data } }
-                        ]
-                    }]
-                };
-
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
-
-                if (result.error) {
-                    throw new Error(result.error.message);
-                }
-
-                const aiText = result.candidates[0].content.parts[0].text;
-                container.innerHTML = aiText.replace(/```html|```/g, "").trim();
-                status.innerText = "✅ 분석 완료!";
+            const payload = {
+                contents: [{
+                    parts: [
+                        { text: "이 이미지에 있는 표를 HTML <table> 태그를 사용해서 그대로 추출해줘. 다른 설명은 필요 없어." },
+                        { inlineData: { mimeType: file.type, data: base64Data } }
+                    ]
+                }]
             };
 
-            reader.readAsDataURL(file);
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                // 서버 에러 상세 정보 출력
+                throw new Error(result.error ? result.error.message : "서버 응답 오류");
+            }
+
+            if (result.candidates && result.candidates[0].content) {
+                const aiText = result.candidates[0].content.parts[0].text;
+                container.innerHTML = aiText.replace(/```html|```/g, "").trim();
+                status.style.color = "green";
+                status.innerText = "✅ 분석 성공!";
+            } else {
+                throw new Error("AI가 응답을 생성하지 못했습니다.");
+            }
+
         } catch (error) {
-            console.error(error);
-            alert("에러 발생: " + error.message);
-            status.innerText = "❌ 실패";
+            console.error("에러 상세 정보:", error);
+            status.style.color = "red";
+            status.innerText = "❌ 오류: " + error.message;
+            alert("시스템 오류: " + error.message);
         } finally {
             btn.disabled = false;
         }
