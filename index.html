@@ -3,30 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>식단표 분석기 v2.3 (최종)</title>
+    <title>식단표 분석기 v2.4 (최종)</title>
     <style>
-        :root { --primary: #28a745; --bg: #f4f7f6; }
-        body { font-family: -apple-system, sans-serif; padding: 20px; background: var(--bg); line-height: 1.6; }
+        body { font-family: -apple-system, sans-serif; padding: 20px; background: #f4f7f6; }
         .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); max-width: 700px; margin: auto; }
-        h2 { text-align: center; color: #333; margin-top: 0; }
-        button { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; }
-        button:hover { background: #218838; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
+        h2 { text-align: center; color: #333; }
+        button { width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        button:disabled { background: #ccc; }
         #status { margin-top: 15px; text-align: center; font-weight: bold; }
-        #result { margin-top: 25px; border-top: 2px solid #eee; padding-top: 20px; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; background: white; }
+        #result { margin-top: 25px; border-top: 2px solid #eee; padding-top: 20px; }
+        table { width: 100%; border-collapse: collapse; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>📋 식단표 자동 분석기 (v2.3)</h2>
-    <p style="font-size: 0.9em; color: #666; text-align: center;">이미지를 선택하고 분석 시작을 눌러주세요.</p>
-    
+    <h2>📋 식단표 자동 분석기 (v2.4)</h2>
     <input type="file" id="imageInput" accept="image/*" style="margin: 20px 0; width: 100%;">
     <button id="convertBtn" onclick="runAnalysis()">AI 분석 시작</button>
-    
     <div id="status"></div>
     <div id="result"></div>
 </div>
@@ -40,18 +35,19 @@
 
         if (!fileInput.files[0]) return alert("이미지 파일을 선택하세요.");
 
-        // 💡 [중요] image_bfc145.png에서 확인한 새 API 키를 아래에 정확히 넣어주세요.
-        const API_KEY = "AIzaSyBlMQlI0de8dKBUoxYKaSKtZpNi3kbbEMs";
+        // 💡 [중요] image_bfc145.png에서 확인한 API 키를 아래에 넣으세요.
+        const API_KEY = "AIzaSyCg9N3AmgRkibUtuT-PCq6ucUJexVZ67e4";
 
-        // 구글 서버가 404를 뱉지 못하도록 가장 확실한 경로와 모델명을 순서대로 시도합니다.
+        // 구글 서버가 인식할 수 있는 모든 경로 조합입니다.
         const endpoints = [
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`,
-            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`
         ];
 
         btn.disabled = true;
         status.style.color = "blue";
-        status.innerText = "⏳ AI가 분석 중입니다... (최대 1분)";
+        status.innerText = "⏳ AI가 경로를 찾아 분석 중입니다...";
         resultDiv.innerHTML = "";
 
         try {
@@ -72,7 +68,6 @@
             };
 
             let success = false;
-
             for (let url of endpoints) {
                 try {
                     const response = await fetch(url, {
@@ -87,20 +82,16 @@
                         const aiText = data.candidates[0].content.parts[0].text;
                         resultDiv.innerHTML = aiText.replace(/```html|```/g, "").trim();
                         status.style.color = "green";
-                        status.innerText = "✅ 분석 성공!";
+                        status.innerText = "✅ 성공적으로 분석되었습니다!";
                         success = true;
                         break; 
                     } else {
-                        console.warn(`경로 실패: ${url}`, data.error);
+                        console.warn(`경로 시도 실패 (${url}):`, data.error?.message);
                     }
-                } catch (e) {
-                    console.error("통신 에러:", e);
-                }
+                } catch (e) { console.error("통신 장애:", e); }
             }
 
-            if (!success) {
-                throw new Error("모든 경로에서 모델을 찾지 못했습니다(404). API 키 프로젝트 설정을 다시 확인해야 합니다.");
-            }
+            if (!success) throw new Error("구글 서버에서 모델을 찾을 수 없습니다. API 활성화 여부를 확인하세요.");
 
         } catch (error) {
             status.style.color = "red";
@@ -110,6 +101,5 @@
         }
     }
 </script>
-
 </body>
 </html>
