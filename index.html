@@ -2,89 +2,114 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>이미지 표 분석 v2.2 (최종)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>식단표 분석기 v2.3 (최종)</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f4f7f6; line-height: 1.6; }
+        :root { --primary: #28a745; --bg: #f4f7f6; }
+        body { font-family: -apple-system, sans-serif; padding: 20px; background: var(--bg); line-height: 1.6; }
         .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); max-width: 700px; margin: auto; }
-        button { width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; }
+        h2 { text-align: center; color: #333; margin-top: 0; }
+        button { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; }
         button:hover { background: #218838; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
         #status { margin-top: 15px; text-align: center; font-weight: bold; }
-        #result { margin-top: 25px; border-top: 2px solid #eee; padding-top: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        #result { margin-top: 25px; border-top: 2px solid #eee; padding-top: 20px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; background: white; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
     </style>
 </head>
 <body>
+
 <div class="card">
-    <h2>📋 식단표 분석기 (v2.2)</h2>
+    <h2>📋 식단표 자동 분석기 (v2.3)</h2>
+    <p style="font-size: 0.9em; color: #666; text-align: center;">이미지를 선택하고 분석 시작을 눌러주세요.</p>
+    
     <input type="file" id="imageInput" accept="image/*" style="margin: 20px 0; width: 100%;">
-    <button onclick="runAnalysis()">AI 분석 시작</button>
+    <button id="convertBtn" onclick="runAnalysis()">AI 분석 시작</button>
+    
     <div id="status"></div>
     <div id="result"></div>
 </div>
 
 <script>
-async function runAnalysis() {
-    const file = document.getElementById('imageInput').files[0];
-    const status = document.getElementById('status');
-    const resultDiv = document.getElementById('result');
-    
-    if (!file) return alert("이미지를 먼저 선택해 주세요.");
+    async function runAnalysis() {
+        const fileInput = document.getElementById('imageInput');
+        const status = document.getElementById('status');
+        const resultDiv = document.getElementById('result');
+        const btn = document.getElementById('convertBtn');
 
-    // 💡 [중요] image_bfc145.png에서 만든 새 API 키를 여기에 넣으세요!
-    const API_KEY = "AIzaSyBlMQlI0de8dKBUoxYKaSKtZpNi3kbbEMs"; 
-    
-    // 시도할 경로 목록 (v1에서 안 되면 v1beta로 자동 전환)
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
-    ];
+        if (!fileInput.files[0]) return alert("이미지 파일을 선택하세요.");
 
-    status.style.color = "blue";
-    status.innerText = "⏳ AI 분석을 시도 중입니다...";
-    resultDiv.innerHTML = "";
+        // 💡 [중요] image_bfc145.png에서 확인한 새 API 키를 아래에 정확히 넣어주세요.
+        const API_KEY = "AIzaSyBlMQlI0de8dKBUoxYKaSKtZpNi3kbbEMs";
 
-    const base64Data = await new Promise(r => {
-        const reader = new FileReader();
-        reader.onload = () => r(reader.result.split(',')[1]);
-        reader.readAsDataURL(file);
-    });
+        // 구글 서버가 404를 뱉지 못하도록 가장 확실한 경로와 모델명을 순서대로 시도합니다.
+        const endpoints = [
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`
+        ];
 
-    const payload = {
-        contents: [{
-            parts: [
-                { text: "이 이미지 속의 식단표를 HTML <table> 코드로만 추출해줘. 다른 말은 하지 마." },
-                { inlineData: { mimeType: file.type, data: base64Data } }
-            ]
-        }]
-    };
+        btn.disabled = true;
+        status.style.color = "blue";
+        status.innerText = "⏳ AI가 분석 중입니다... (최대 1분)";
+        resultDiv.innerHTML = "";
 
-    for (let url of endpoints) {
         try {
-            console.log(`시도 중인 경로: ${url}`);
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+            const file = fileInput.files[0];
+            const base64Data = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.readAsDataURL(file);
             });
 
-            const data = await response.json();
+            const payload = {
+                contents: [{
+                    parts: [
+                        { text: "이 이미지의 식단표를 분석해서 HTML <table> 태그로만 응답해줘. 중식, 석식, 야식 위주로 정리해." },
+                        { inlineData: { mimeType: file.type, data: base64Data } }
+                    ]
+                }]
+            };
 
-            if (response.ok && data.candidates) {
-                const html = data.candidates[0].content.parts[0].text.replace(/```html|```/g, "").trim();
-                resultDiv.innerHTML = html;
-                status.style.color = "green";
-                status.innerText = "✅ 성공적으로 분석되었습니다!";
-                return; // 성공 시 종료
-            } else {
-                console.warn(`경로 실패 (${url}):`, data.error ? data.error.message : "알 수 없는 오류");
+            let success = false;
+
+            for (let url of endpoints) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.candidates) {
+                        const aiText = data.candidates[0].content.parts[0].text;
+                        resultDiv.innerHTML = aiText.replace(/```html|```/g, "").trim();
+                        status.style.color = "green";
+                        status.innerText = "✅ 분석 성공!";
+                        success = true;
+                        break; 
+                    } else {
+                        console.warn(`경로 실패: ${url}`, data.error);
+                    }
+                } catch (e) {
+                    console.error("통신 에러:", e);
+                }
             }
-        } catch (e) {
-            console.error(`통신 에러:`, e);
+
+            if (!success) {
+                throw new Error("모든 경로에서 모델을 찾지 못했습니다(404). API 키 프로젝트 설정을 다시 확인해야 합니다.");
+            }
+
+        } catch (error) {
+            status.style.color = "red";
+            status.innerText = "❌ 실패: " + error.message;
+        } finally {
+            btn.disabled = false;
         }
     }
-
-    status.style.color = "red";
-    status.innerText = "❌ 모든 경로에서 실패했습니다. API 키 권한을 다시 확인하세요.";
-}
 </script>
+
 </body>
 </html>
