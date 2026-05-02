@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>표 변환 게시판</title>
+    <style>
+        /* 모바일 우선 디자인 */
+        body { font-family: sans-serif; padding: 20px; background: #f5f5f5; }
+        .card { background: white; padding: 20px; border-radius: 12px; shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        #resultTable { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        #resultTable th, #resultTable td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        #resultTable th { background-color: #f2f2f2; }
+        .loading { display: none; color: blue; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>이미지 표 변환기</h2>
+    <input type="file" id="imageInput" accept="image/*">
+    <button onclick="convertTable()">변환하기</button>
+    <div id="loader" class="loading">AI가 표를 분석 중입니다...</div>
+</div>
+
+<div id="outputArea" class="card" style="margin-top: 20px; display: none;">
+    <h3>변환 결과</h3>
+    <div id="tableContainer"></div>
+    <button onclick="copyToClipboard()">결과 복사</button>
+</div>
+
+<script type="module">
+    import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+
+    const API_KEY = "YOUR_GEMINI_API_KEY"; // 여기에 본인의 API 키 입력
+    const genAI = new GoogleGenerativeAI(API_KEY);
+
+    window.convertTable = async () => {
+        const fileInput = document.getElementById('imageInput');
+        if (!fileInput.files[0]) return alert("이미지를 선택해주세요.");
+
+        document.getElementById('loader').style.display = 'block';
+        
+        try {
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const imagePart = await fileToGenerativePart(fileInput.files[0]);
+
+            const prompt = "이 이미지의 표를 분석해서 HTML <table> 형식으로 변환해줘. 스타일 태그 없이 순수 태그만 사용해줘.";
+            
+            const result = await model.generateContent([prompt, imagePart]);
+            const text = result.response.text();
+
+            document.getElementById('tableContainer').innerHTML = text;
+            document.getElementById('outputArea').style.display = 'block';
+        } catch (error) {
+            console.error(error);
+            alert("분석 중 오류가 발생했습니다.");
+        } finally {
+            document.getElementById('loader').style.display = 'none';
+        }
+    };
+
+    async function fileToGenerativePart(file) {
+        const base64EncodedDataPromise = new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result.split(',')[1]);
+            reader.readAsDataURL(file);
+        });
+        return {
+            inlineData: { data: await base64EncodedDataPromise, mimeType: file.type },
+        };
+    }
+</script>
+</body>
+</html>
