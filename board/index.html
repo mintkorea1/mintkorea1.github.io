@@ -48,7 +48,7 @@ async function analyzeMenu() {
     
     // CORS 에러와 404 에러를 방지하기 위해 주소를 가장 안전한 방식으로 결합했습니다.
 // 기존 url 줄을 지우고 이 줄로 바꿔주세요.
-const url = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=" + API_KEY;
+const url = "[https://generativelanguage.googleapis.com/v1/gemini-1.5-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1/gemini-1.5-flash:generateContent?key=)" + API_KEY;
     status.innerHTML = "⏳ AI가 분석을 시작합니다. 잠시만 기다려주세요...";
     resultDiv.innerHTML = "";
 
