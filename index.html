@@ -56,7 +56,7 @@
         
         try {
             // Gemini 1.5 Flash 모델 호출
-           const model = genAI.getGenerativeModel({ model: "models/gemini-1.5-flash" });
+           const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
             
             const imagePart = await fileToGenerativePart(fileInput.files[0]);
             const prompt = "이 이미지 속의 표 데이터를 추출해서 HTML <table> 태그 형식으로 변환해줘. 스타일 속성은 제외하고 <thead>와 <tbody> 구조를 갖춘 순수 HTML만 응답해줘.";
