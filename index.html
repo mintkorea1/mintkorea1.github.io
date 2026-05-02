@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>이미지 표 분석 변환기 v1.4</title>
+    <title>이미지 표 분석 변환기 v1.5</title>
     <style>
         :root { --primary: #4A90E2; --bg: #f4f7f6; }
         body { font-family: -apple-system, sans-serif; padding: 20px; background: var(--bg); color: #333; line-height: 1.6; }
@@ -15,7 +15,7 @@
         button:disabled { background: #ccc; cursor: not-allowed; }
         #status { margin-top: 15px; text-align: center; font-weight: 600; color: #666; }
         #tableContainer { width: 100%; overflow-x: auto; margin-top: 25px; border-radius: 8px; border: 1px solid #eee; }
-        table { width: 100%; border-collapse: collapse; background: white; }
+        table { width: 100%; border-collapse: collapse; background: white; min-width: 100%; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background-color: #f8f9fa; }
     </style>
@@ -24,7 +24,7 @@
 
 <div class="card">
     <h2>📊 이미지 표 분석 변환기</h2>
-    <p>식단표나 시설 관리 이미지를 업로드하세요. (v1.4)</p>
+    <p>이미지를 업로드하면 AI가 표 코드로 변환합니다. (v1.5)</p>
     <input type="file" id="imageInput" accept="image/*">
     <button id="convertBtn" onclick="runAnalysis()">AI 분석 시작</button>
     <div id="status"></div>
@@ -42,8 +42,8 @@
 <script type="module">
     import { GoogleGenerativeAI } from "@google/generative-ai";
 
-    // 💡 [중요] 새로 발급받은 API 키를 정확히 입력하세요.
-    const API_KEY = "AIzaSyBP9Lr4cXC9ODlJ9aJ0DMhcWjPWfBFz59w"; 
+    // 💡 [중요] 리퍼러 제한(image_cd6fab.png)을 건 키를 여기에 넣으세요.
+    const API_KEY = "AIzaSyCq2FeS2HfHFOSsHCmXPAzkDmLebb_ZOO0"; 
     const genAI = new GoogleGenerativeAI(API_KEY);
 
     window.runAnalysis = async () => {
@@ -55,11 +55,11 @@
         if (!fileInput.files[0]) return alert("이미지 파일을 선택하세요.");
 
         btn.disabled = true;
-        status.innerHTML = "⌛ AI가 분석 중입니다... (최대 1분 소요)";
+        status.innerHTML = "⌛ AI가 표 구조를 분석 중입니다... (최대 1분 소요)";
         container.innerHTML = "";
 
         try {
-            // [핵심 수정] apiVersion을 "v1"으로 강제 지정하여 404 에러를 방지합니다.
+            // [핵심] apiVersion을 명시적으로 v1으로 고정하여 404 에러를 차단합니다.
             const model = genAI.getGenerativeModel(
                 { model: "gemini-1.5-flash" },
                 { apiVersion: "v1" }
@@ -76,20 +76,21 @@
                 inlineData: { data: base64Data, mimeType: file.type }
             };
 
-            const prompt = "이미지 속의 표 데이터를 추출해서 HTML <table> 구조로 응답해줘. 설명 없이 코드만 줘.";
+            const prompt = "이미지의 표 데이터를 추출해서 HTML <table> 구조로 응답해줘. 설명 없이 코드만 줘.";
             
             const result = await model.generateContent([prompt, imagePart]);
             const response = await result.response;
             const text = response.text();
 
+            // 마크다운 태그 제거 후 HTML 주입
             const cleanHtml = text.replace(/```html|```/g, "").trim();
             container.innerHTML = cleanHtml;
             status.innerHTML = "✅ 분석 완료!";
             
         } catch (error) {
-            console.error("Error:", error);
-            status.innerHTML = "❌ 오류 발생";
-            alert("에러 내용: " + error.message);
+            console.error("Error Details:", error);
+            status.innerHTML = "❌ 분석 중 오류 발생";
+            alert("시스템 메시지: " + error.message);
         } finally {
             btn.disabled = false;
         }
