@@ -39,8 +39,8 @@ async function analyzeMenu() {
     const API_KEY = "AQ.Ab8RN6KUoip6fdnIq4o-lUQBYHZt5irx0CTVgWUSAGn8F603sA"; 
     
     // 주소가 중복되지 않도록 변수를 깔끔하게 정리했습니다.
-    const url = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=" + API_KEY;
-
+// 이 주소가 구글 API의 가장 표준적인 v1beta 호출 방식입니다.
+const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + API_KEY;
     status.innerHTML = "⏳ 분석 중...";
     resultDiv.innerHTML = "";
 
