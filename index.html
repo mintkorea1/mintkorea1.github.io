@@ -3,37 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>이미지 표 분석 변환기 v1.6</title>
+    <title>이미지 표 분석 v1.7</title>
     <style>
         :root { --primary: #4A90E2; --bg: #f4f7f6; }
         body { font-family: -apple-system, sans-serif; padding: 20px; background: var(--bg); color: #333; }
-        .card { background: white; padding: 24px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); max-width: 800px; margin: 0 auto 20px; }
-        button { background: var(--primary); color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; }
+        .card { background: white; padding: 24px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); max-width: 800px; margin: 0 auto; }
+        button { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; }
         button:disabled { background: #ccc; }
         #tableContainer { width: 100%; overflow-x: auto; margin-top: 25px; }
-        table { width: 100%; border-collapse: collapse; background: white; }
+        table { width: 100%; border-collapse: collapse; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>📊 이미지 표 분석 변환기</h2>
-    <p>이미지를 업로드하면 AI가 표 코드로 변환합니다. (v1.6)</p>
-    <input type="file" id="imageInput" accept="image/*">
+    <h2>📊 이미지 표 분석 변환기 (v1.7)</h2>
+    <input type="file" id="imageInput" accept="image/*" style="margin:20px 0; width:100%;">
     <button id="convertBtn" onclick="runAnalysis()">AI 분석 시작</button>
-    <div id="status" style="margin-top:15px; text-align:center; font-weight:600;"></div>
+    <div id="status" style="margin-top:15px; text-align:center;"></div>
     <div id="tableContainer"></div>
 </div>
 
-<script type="importmap">
-  { "imports": { "@google/generative-ai": "https://esm.run/@google/generative-ai" } }
-</script>
-
 <script type="module">
-    import { GoogleGenerativeAI } from "@google/generative-ai";
+    // 💡 라이브러리 버전을 0.12.0으로 강제 고정하여 v1beta 에러를 원천 차단합니다.
+    import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai@0.12.0";
 
-    // 💡 리퍼러 제한(image_cd6fab.png)을 건 키를 여기에 정확히 넣으세요.
     const API_KEY = "AIzaSyCq2FeS2HfHFOSsHCmXPAzkDmLebb_ZOO0"; 
     const genAI = new GoogleGenerativeAI(API_KEY);
 
@@ -46,11 +41,11 @@
         if (!fileInput.files[0]) return alert("이미지 파일을 선택하세요.");
 
         btn.disabled = true;
-        status.innerHTML = "⌛ AI가 표 구조를 분석 중입니다...";
+        status.innerHTML = "⌛ 분석 중...";
         container.innerHTML = "";
 
         try {
-            // [수정] 404 에러 방지를 위해 추가 옵션 없이 모델명만 짧게 씁니다.
+            // [중요] 최신 버전에서는 이 한 줄이면 충분합니다.
             const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
             const file = fileInput.files[0];
@@ -61,18 +56,19 @@
             });
 
             const result = await model.generateContent([
-                "이미지의 표 데이터를 추출해서 HTML <table> 구조로 응답해줘. 설명 없이 코드만 줘.",
+                "이미지의 데이터를 HTML <table> 구조로 응답해줘. 설명 없이 코드만.",
                 { inlineData: { data: base64Data, mimeType: file.type } }
             ]);
 
             const text = result.response.text();
             container.innerHTML = text.replace(/```html|```/g, "").trim();
-            status.innerHTML = "✅ 분석 완료!";
+            status.innerHTML = "✅ 완료!";
             
         } catch (error) {
-            console.error("Error:", error);
+            console.error("Error Detail:", error);
+            // 에러 메시지에 주소가 포함되어 나오면 v1beta인지 v1인지 꼭 확인해보세요.
+            alert("에러 발생: " + error.message);
             status.innerHTML = "❌ 오류 발생";
-            alert("사유: " + error.message);
         } finally {
             btn.disabled = false;
         }
