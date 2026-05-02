@@ -42,7 +42,7 @@
         document.getElementById('loader').style.display = 'block';
         
         try {
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const model = genAI.getGenerativeModel({ model: "models/gemini-1.5-flash" });
             const imagePart = await fileToGenerativePart(fileInput.files[0]);
 
             const prompt = "이 이미지의 표를 분석해서 HTML <table> 형식으로 변환해줘. 스타일 태그 없이 순수 태그만 사용해줘.";
