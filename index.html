@@ -44,7 +44,7 @@
         try {
             // 기존 코드 대신 아래 코드를 사용해 보세요.
 const model = genAI.getGenerativeModel({ 
-    model: "models/gemini-1.5-flash",
+    model: "gemini-1.5-flash-latest",
 }, { apiVersion: "v1beta" }); // API 버전을 명시적으로 지정
             const imagePart = await fileToGenerativePart(fileInput.files[0]);
 
