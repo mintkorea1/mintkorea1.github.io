@@ -3,66 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>표 변환 게시판</title>
+    <title>이미지 표 분석 게시판</title>
     <style>
-        /* 모바일 우선 디자인 */
-        body { font-family: sans-serif; padding: 20px; background: #f5f5f5; }
-        .card { background: white; padding: 20px; border-radius: 12px; shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        #resultTable { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        #resultTable th, #resultTable td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        #resultTable th { background-color: #f2f2f2; }
-        .loading { display: none; color: blue; font-weight: bold; }
+        :root { --primary-color: #4A90E2; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; background: #f0f2f5; color: #333; line-height: 1.6; }
+        .card { background: white; padding: 24px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 800px; margin: 0 auto 20px; }
+        h2 { margin-top: 0; color: #1a1a1a; font-size: 1.5rem; }
+        input[type="file"] { margin: 15px 0; display: block; width: 100%; }
+        button { background: var(--primary-color); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: opacity 0.2s; }
+        button:hover { opacity: 0.9; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .loading { display: none; margin-top: 15px; color: var(--primary-color); font-weight: bold; text-align: center; }
+        #tableContainer { width: 100%; overflow-x: auto; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; background: white; border: 1px solid #ddd; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; font-size: 14px; }
+        th { background-color: #f8f9fa; font-weight: 600; }
+        .copy-btn { background: #34c759; margin-top: 15px; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>이미지 표 변환기</h2>
+    <h2>📊 이미지 표 변환기</h2>
+    <p style="font-size: 14px; color: #666;">이미지를 업로드하면 AI가 표를 분석하여 디지털 데이터로 변환합니다.</p>
     <input type="file" id="imageInput" accept="image/*">
-    <button onclick="convertTable()">변환하기</button>
-    <div id="loader" class="loading">AI가 표를 분석 중입니다...</div>
+    <button id="convertBtn" onclick="convertTable()">변환하기</button>
+    <div id="loader" class="loading">⌛ AI가 표 구조를 분석하고 있습니다...</div>
 </div>
 
-<div id="outputArea" class="card" style="margin-top: 20px; display: none;">
-    <h3>변환 결과</h3>
+<div id="outputArea" class="card" style="display: none;">
+    <h3>✅ 변환 결과</h3>
     <div id="tableContainer"></div>
-    <button onclick="copyToClipboard()">결과 복사</button>
+    <button class="copy-btn" onclick="copyTable()">표 데이터 복사</button>
 </div>
 
 <script type="module">
     import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
-    const API_KEY = "AIzaSyCwmM3urQ0iZzWliKWaZlI0ozbBw4-Fgng"; // 여기에 본인의 API 키 입력
+    // 💡 중요: AI Studio에서 새로 발급받은 'AIza'로 시작하는 전체 키를 입력하세요.
+    const API_KEY = "AIzaSyCjtk348f8dlajF5PAu3POF3qiD4BsKp3Q"; 
     const genAI = new GoogleGenerativeAI(API_KEY);
 
     window.convertTable = async () => {
         const fileInput = document.getElementById('imageInput');
-        if (!fileInput.files[0]) return alert("이미지를 선택해주세요.");
+        const btn = document.getElementById('convertBtn');
+        const loader = document.getElementById('loader');
 
-        document.getElementById('loader').style.display = 'block';
+        if (!fileInput.files[0]) return alert("분석할 이미지를 선택해주세요.");
+
+        btn.disabled = true;
+        loader.style.display = 'block';
+        document.getElementById('outputArea').style.display = 'none';
         
         try {
-            // 기존 코드 대신 아래 코드를 사용해 보세요.
-const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash-latest",
-}, { apiVersion: "v1beta" }); // API 버전을 명시적으로 지정
+            // Flash 모델 사용 (빠르고 무료 티어에 최적화)
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            
             const imagePart = await fileToGenerativePart(fileInput.files[0]);
-
-            const prompt = "이 이미지의 표를 분석해서 HTML <table> 형식으로 변환해줘. 스타일 태그 없이 순수 태그만 사용해줘.";
+            const prompt = "이 이미지의 모든 표를 찾아서 HTML <table> 태그로 변환해줘. 스타일 속성은 제외하고 <thead>, <tbody> 구조를 지켜서 순수 HTML 태그만 출력해줘.";
             
             const result = await model.generateContent([prompt, imagePart]);
-            const text = result.response.text();
+            const response = await result.response;
+            const text = response.text();
 
-            document.getElementById('tableContainer').innerHTML = text;
+            // 마크다운 기호(```html) 제거 로직
+            const cleanHtml = text.replace(/```html|```/g, "").trim();
+
+            document.getElementById('tableContainer').innerHTML = cleanHtml;
             document.getElementById('outputArea').style.display = 'block';
         } catch (error) {
-            console.error(error);
-            alert("분석 중 오류가 발생했습니다.");
+            console.error("상세 에러 내역:", error);
+            // API 키 경고 등 구체적인 에러 메시지 출력
+            alert("오류가 발생했습니다.\n사유: " + error.message);
         } finally {
-            document.getElementById('loader').style.display = 'none';
+            btn.disabled = false;
+            loader.style.display = 'none';
         }
     };
 
+    // 이미지를 Gemini API용 형식으로 변환하는 함수
     async function fileToGenerativePart(file) {
         const base64EncodedDataPromise = new Promise((resolve) => {
             const reader = new FileReader();
@@ -73,6 +92,15 @@ const model = genAI.getGenerativeModel({
             inlineData: { data: await base64EncodedDataPromise, mimeType: file.type },
         };
     }
+
+    // 결과 복사 함수
+    window.copyTable = () => {
+        const table = document.getElementById('tableContainer').innerText;
+        navigator.clipboard.writeText(table).then(() => {
+            alert("표 텍스트가 클립보드에 복사되었습니다. 엑셀이나 메모장에 붙여넣으세요.");
+        });
+    };
 </script>
+
 </body>
 </html>
