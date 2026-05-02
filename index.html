@@ -35,9 +35,7 @@ async function runAnalysis() {
     const API_KEY = "AIzaSyBlMQlI0de8dKBUoxYKaSKtZpNi3kbbEMs"; 
     
     // 시도할 경로 목록 (v1에서 안 되면 v1beta로 자동 전환)
-    const endpoints = [
-        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`
+const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
     ];
 
     status.style.color = "blue";
