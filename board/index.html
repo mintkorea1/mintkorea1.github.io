@@ -3,34 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>식단표 AI 분석기 v3.2</title>
+    <title>식단표 AI 분석기 v3.3</title>
     <style>
         body { font-family: 'Pretendard', sans-serif; padding: 20px; background: #f8f9fa; color: #333; }
         .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); max-width: 600px; margin: auto; }
         h2 { text-align: center; color: #1a73e8; margin-bottom: 25px; }
         .upload-section { border: 2px dashed #dee2e6; padding: 20px; text-align: center; border-radius: 10px; margin-bottom: 20px; }
-        button { width: 100%; padding: 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: background 0.3s; }
+        button { width: 100%; padding: 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; }
         button:hover { background: #1557b0; }
         #status { margin-top: 15px; text-align: center; font-weight: 500; }
         #result { margin-top: 25px; border-top: 2px solid #f1f3f4; padding-top: 20px; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
         th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; font-size: 14px; }
         th { background-color: #f8f9fa; color: #1a73e8; }
-        .error-msg { color: #d93025; background: #fce8e6; padding: 10px; border-radius: 5px; font-size: 13px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>🍴 식단표 AI 분석기</h2>
-    
     <div class="upload-section">
         <input type="file" id="menuImage" accept="image/*" style="width: 100%;">
-        <p style="font-size: 12px; color: #666; margin-top: 10px;">식단표 사진(JPG, PNG)을 선택해주세요.</p>
+        <p style="font-size: 12px; color: #666; margin-top: 10px;">식단표 사진을 선택해주세요.</p>
     </div>
-
     <button onclick="analyzeMenu()">AI 분석 시작</button>
-    
     <div id="status"></div>
     <div id="result"></div>
 </div>
@@ -42,17 +38,15 @@ async function analyzeMenu() {
     const resultDiv = document.getElementById('result');
     
     if (!fileInput.files[0]) {
-        alert("분석할 사진을 먼저 선택해주세요!");
+        alert("사진을 먼저 선택해주세요!");
         return;
     }
 
-    // 💡 [중요] 여기에 태언님이 복사하신 API 키를 넣어주세요!
+    // 💡 [필독] image_97c7a4.png에서 확인한 API 키를 아래 따옴표 안에 넣어주세요.
     const API_KEY = "AQ.Ab8RN6KUoip6fdnIq4o-lUQBYHZt5irx0CTVgWUSAGn8F603sA"; 
-    
-    // v1beta 모델 경로와 메서드를 정확히 결합한 주소입니다.
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
-    status.innerHTML = "⏳ <span style='color:#1a73e8'>AI가 식단표를 정독하고 있습니다...</span>";
+    status.innerHTML = "⏳ AI가 식단표를 읽고 있습니다...";
     resultDiv.innerHTML = "";
 
     try {
@@ -69,7 +63,7 @@ async function analyzeMenu() {
             body: JSON.stringify({
                 contents: [{
                     parts: [
-                        { text: "이 식단표 이미지에서 날짜별 중식, 석식, 야식 메뉴를 찾아내서 HTML <table> 구조로 아주 깔끔하게 정리해줘. 다른 설명은 하지마." },
+                        { text: "이 식단표 이미지에서 날짜별 중식, 석식, 야식 메뉴를 찾아내서 HTML table 구조로 정리해줘. 다른 설명은 하지마." },
                         { inlineData: { mimeType: file.type, data: base64Data } }
                     ]
                 }]
@@ -77,27 +71,23 @@ async function analyzeMenu() {
         });
 
         const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error?.message || "API 호출 실패");
-        }
+        if (!response.ok) throw new Error(data.error?.message || "연결 실패");
 
         if (data.candidates && data.candidates[0].content.parts[0].text) {
-            const aiText = data.candidates[0].content.parts[0].text;
-            // 마크다운 기호 제거 후 HTML 삽입
-            resultDiv.innerHTML = aiText.replace(/```html|
-```/g, "");
-            status.innerHTML = "<span style='color:#28a745'>✅ 분석이 완료되었습니다!</span>";
+            let aiText = data.candidates[0].content.parts[0].text;
+            
+            // 🛠️ 문법 에러(SyntaxError)를 피하기 위해 가장 안전한 방식으로 글자를 다듬습니다.
+            aiText = aiText.replace(/```html/g, "").replace(/```/g, "").trim();
+            
+            resultDiv.innerHTML = aiText;
+            status.innerHTML = "✅ 분석 완료!";
         } else {
-            status.innerHTML = "<span class='error-msg'>❌ 결과를 가져오지 못했습니다. 다시 시도해주세요.</span>";
+            status.innerHTML = "❌ 분석 결과가 없습니다.";
         }
-
     } catch (error) {
-        console.error("Error 상세:", error);
-        status.innerHTML = `<div class='error-msg'>🚨 오류 발생: ${error.message}<br>API 키 설정이나 파일 형식을 확인해주세요.</div>`;
+        status.innerHTML = "🚨 에러 발생: " + error.message;
     }
 }
 </script>
-
 </body>
 </html>
