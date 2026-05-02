@@ -2,21 +2,21 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>식단표 분석기 v3.0</title>
+    <title>식단표 분석기 v3.1</title>
     <style>
         body { font-family: sans-serif; padding: 20px; background: #f0f2f5; }
         .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
         h2 { text-align: center; color: #1a73e8; }
         button { width: 100%; padding: 15px; background: #1a73e8; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; margin-top: 10px; }
         #status { margin-top: 15px; text-align: center; font-weight: bold; color: #555; }
-        #result { margin-top: 20px; line-height: 1.6; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        #result { margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; }
         th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h2>식단표 AI 분석기</h2>
+    <h2>식단표 AI 분석기 v3.1</h2>
     <input type="file" id="menuImage" accept="image/*" style="margin: 20px 0; width: 100%;">
     <button onclick="analyze()">분석 시작</button>
     <div id="status"></div>
@@ -26,14 +26,18 @@
 <script>
 async function analyze() {
     const file = document.getElementById('menuImage').files[0];
-    if (!file) return alert("식단표 사진을 선택해주세요.");
+    if (!file) return alert("사진을 먼저 선택해주세요.");
 
-    // 💡 AI Studio에서 발급받은 키를 여기에 넣으세요!
+    // 💡 복사하신 API 키를 여기에 넣으세요
     const API_KEY = "AIzaSyCurSVHt6L9qgqQg6Ps1VubbuK2uAaeJtg"; 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+    
+    // 🚨 주소를 v1 정식 버전으로 정밀 수정했습니다.
+    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
     const status = document.getElementById('status');
-    status.innerText = "⏳ 분석 중... 잠시만 기다려주세요.";
+    const resultDiv = document.getElementById('result');
+    status.innerText = "⏳ 구글 AI가 식단을 읽는 중...";
+    resultDiv.innerHTML = "";
 
     try {
         const base64 = await new Promise(resolve => {
@@ -47,21 +51,29 @@ async function analyze() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{ parts: [
-                    { text: "이 식단표 이미지에서 중식, 석식, 야식 메뉴를 HTML 테이블로 정리해줘." },
+                    { text: "이 식단표 이미지에서 중식, 석식, 야식 메뉴만 추출해서 HTML table 형식으로 정리해줘." },
                     { inlineData: { mimeType: file.type, data: base64 } }
                 ]}]
             })
         });
 
         const data = await response.json();
-        if (data.candidates) {
-            document.getElementById('result').innerHTML = data.candidates[0].content.parts[0].text.replace(/```html|```/g, "");
-            status.innerText = "✅ 분석 완료!";
+
+        // 404 에러나 다른 에러가 날 경우 상세 메시지 출력
+        if (!response.ok) {
+            throw new Error(data.error?.message || `서버 응답 오류 (${response.status})`);
+        }
+
+        if (data.candidates && data.candidates[0].content.parts[0].text) {
+            let htmlResult = data.candidates[0].content.parts[0].text;
+            resultDiv.innerHTML = htmlResult.replace(/```html|```/g, "");
+            status.innerText = "✅ 분석 성공!";
         } else {
-            status.innerText = "❌ 키가 올바르지 않거나 설정이 필요합니다.";
+            status.innerText = "❌ 결과를 가져오지 못했습니다.";
         }
     } catch (e) {
-        status.innerText = "❌ 오류 발생: " + e.message;
+        status.innerText = "❌ 에러 발생: " + e.message;
+        console.error("상세 에러:", e);
     }
 }
 </script>
