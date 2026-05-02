@@ -3,29 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>식단표 AI 분석기 v3.3</title>
+    <title>식단표 AI 분석기 v3.4</title>
     <style>
-        body { font-family: 'Pretendard', sans-serif; padding: 20px; background: #f8f9fa; color: #333; }
-        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); max-width: 600px; margin: auto; }
-        h2 { text-align: center; color: #1a73e8; margin-bottom: 25px; }
-        .upload-section { border: 2px dashed #dee2e6; padding: 20px; text-align: center; border-radius: 10px; margin-bottom: 20px; }
-        button { width: 100%; padding: 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; }
-        button:hover { background: #1557b0; }
-        #status { margin-top: 15px; text-align: center; font-weight: 500; }
-        #result { margin-top: 25px; border-top: 2px solid #f1f3f4; padding-top: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
-        th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; font-size: 14px; }
-        th { background-color: #f8f9fa; color: #1a73e8; }
+        body { font-family: sans-serif; padding: 20px; background: #f8f9fa; }
+        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
+        button { width: 100%; padding: 15px; background: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        #status { margin-top: 15px; text-align: center; }
+        #result { margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>🍴 식단표 AI 분석기</h2>
-    <div class="upload-section">
-        <input type="file" id="menuImage" accept="image/*" style="width: 100%;">
-        <p style="font-size: 12px; color: #666; margin-top: 10px;">식단표 사진을 선택해주세요.</p>
-    </div>
+    <input type="file" id="menuImage" accept="image/*" style="margin-bottom: 20px; width: 100%;">
     <button onclick="analyzeMenu()">AI 분석 시작</button>
     <div id="status"></div>
     <div id="result"></div>
@@ -42,11 +35,11 @@ async function analyzeMenu() {
         return;
     }
 
-    // 💡 [필독] image_97c7a4.png에서 확인한 API 키를 아래 따옴표 안에 넣어주세요.
+    // [중요] 여기에 태언님의 API 키를 넣어주세요.
     const API_KEY = "AQ.Ab8RN6KUoip6fdnIq4o-lUQBYHZt5irx0CTVgWUSAGn8F603sA"; 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
-    status.innerHTML = "⏳ AI가 식단표를 읽고 있습니다...";
+    status.innerHTML = "⏳ 분석 중...";
     resultDiv.innerHTML = "";
 
     try {
@@ -63,7 +56,7 @@ async function analyzeMenu() {
             body: JSON.stringify({
                 contents: [{
                     parts: [
-                        { text: "이 식단표 이미지에서 날짜별 중식, 석식, 야식 메뉴를 찾아내서 HTML table 구조로 정리해줘. 다른 설명은 하지마." },
+                        { text: "이 이미지의 식단표를 HTML 테이블로 요약해줘." },
                         { inlineData: { mimeType: file.type, data: base64Data } }
                     ]
                 }]
@@ -71,21 +64,15 @@ async function analyzeMenu() {
         });
 
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error?.message || "연결 실패");
-
-        if (data.candidates && data.candidates[0].content.parts[0].text) {
-            let aiText = data.candidates[0].content.parts[0].text;
-            
-            // 🛠️ 문법 에러(SyntaxError)를 피하기 위해 가장 안전한 방식으로 글자를 다듬습니다.
-            aiText = aiText.replace(/```html/g, "").replace(/```/g, "").trim();
-            
-            resultDiv.innerHTML = aiText;
-            status.innerHTML = "✅ 분석 완료!";
-        } else {
-            status.innerHTML = "❌ 분석 결과가 없습니다.";
+        if (data.candidates) {
+            let text = data.candidates[0].content.parts[0].text;
+            // 에러가 났던 replace 부분을 아주 안전하게 바꿨습니다.
+            text = text.split('```html').join('').split('```').join('');
+            resultDiv.innerHTML = text;
+            status.innerHTML = "✅ 완료!";
         }
-    } catch (error) {
-        status.innerHTML = "🚨 에러 발생: " + error.message;
+    } catch (e) {
+        status.innerHTML = "🚨 에러: " + e.message;
     }
 }
 </script>
