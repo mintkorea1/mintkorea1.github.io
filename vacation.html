@@ -35,67 +35,33 @@
         #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; z-index: 3000; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); width: 350px; overflow: hidden; }
         #modalOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 2999; backdrop-filter: blur(2px); }
 
-        /* 인쇄 최적화 - 여백 및 크기 조정 */
+        /* 흑백 인쇄 최적화 및 여백 조정 */
         @media print {
-            @page { 
-                size: A4 landscape; 
-                margin: 0; 
-            }
+            @page { size: A4 landscape; margin: 0; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            html, body { width: 297mm; height: 210mm; overflow: hidden !important; background: white !important; }
+            body { padding: 10mm 8mm !important; display: flex; justify-content: center; }
+            .content-area { padding: 0 !important; width: 100% !important; }
+            #paper { box-shadow: none !important; width: 100% !important; padding: 0 !important; border: none !important; }
+            table { width: 100% !important; min-width: 0 !important; table-layout: fixed !important; font-size: 9.5pt !important; border: 1.5pt solid #000 !important; }
             
-            * { 
-                -webkit-print-color-adjust: exact !important; 
-                print-color-adjust: exact !important; 
-            }
+            /* 행 높이 조정하여 하단 여백 최소화 */
+            td { height: 17pt !important; border: 0.5pt solid #000 !important; color: #000 !important; }
+            .hdr { height: 28pt !important; background-color: #d9d9d9 !important; }
 
-            html, body { 
-                width: 297mm;
-                height: 210mm;
-                overflow: hidden !important; /* 추가 페이지 방지 */
-                background: white !important;
-            }
-
-            body { 
-                padding: 12mm 8mm 10mm 8mm !important; /* 상 12, 좌우 8, 하 10 */
-                display: flex;
-                justify-content: center;
-                align-items: flex-start;
-            }
-
-            .content-area { padding: 0 !important; margin: 0 !important; width: 100% !important; height: 100%; }
-            #paper { 
-                box-shadow: none !important; 
-                width: 100% !important; 
-                padding: 0 !important; 
-                margin: 0 !important;
-                border: none !important;
-            }
-
-            #tableWrapper { overflow: visible !important; width: 100% !important; }
-            table { 
-                width: 100% !important; 
-                min-width: 0 !important; 
-                table-layout: fixed !important;
-                font-size: 9.5pt !important; /* 가독성을 위해 폰트 상향 */
-            }
-
-            /* 하단 여백을 채우기 위해 행 높이 증량 */
-            td { 
-                height: 16.5pt !important; 
-                border: 0.5pt solid #000 !important;
-            }
-
-            .hdr { height: 28pt !important; background-color: #f2f2f2 !important; }
-            .sat { background-color: #f0f7ff !important; color: #007bff !important; }
-            .sun { background-color: #fff0f0 !important; color: #dc3545 !important; }
-            .v-mark { background-color: #d4edda !important; color: #28a745 !important; }
+            /* 흑백 인쇄 시 주말 구분 강화 (진한 회색 배경) */
+            .sat { background-color: #e0e0e0 !important; color: #000 !important; } /* 토요일: 연회색 */
+            .sun { background-color: #b0b0b0 !important; color: #000 !important; } /* 일요일: 진회색 */
+            .v-mark { background-color: #ffffff !important; color: #000 !important; position: relative; }
+            .v-mark::after { content: "V"; font-weight: 900; } /* V 표시 선명하게 */
 
             .controls-container, #modal, #modalOverlay { display: none !important; }
-            #viewTitle { margin: 0 0 15px 0 !important; font-size: 20px !important; }
+            #viewTitle { margin: 0 0 10px 0 !important; font-size: 20px !important; }
         }
     </style>
 </head>
 <body>
-
+<!-- 이하 동일한 HTML 및 스크립트 구조 -->
 <div id="modalOverlay" onclick="closeModal()"></div>
 <div id="modal">
     <div style="background:var(--primary-blue); color:white; padding:18px; font-weight:bold; text-align:center;" id="modalTitle">정보</div>
