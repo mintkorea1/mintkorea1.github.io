@@ -3,46 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>이미지 표 분석 변환기 v1.5</title>
+    <title>이미지 표 분석 변환기 v1.6</title>
     <style>
         :root { --primary: #4A90E2; --bg: #f4f7f6; }
-        body { font-family: -apple-system, sans-serif; padding: 20px; background: var(--bg); color: #333; line-height: 1.6; }
+        body { font-family: -apple-system, sans-serif; padding: 20px; background: var(--bg); color: #333; }
         .card { background: white; padding: 24px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); max-width: 800px; margin: 0 auto 20px; }
-        h2 { margin-top: 0; border-bottom: 2px solid var(--bg); padding-bottom: 10px; }
-        input[type="file"] { margin: 20px 0; width: 100%; border: 1px dashed #ccc; padding: 20px; border-radius: 8px; cursor: pointer; }
-        button { background: var(--primary); color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; transition: 0.2s; }
-        button:hover { background: #357ABD; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
-        #status { margin-top: 15px; text-align: center; font-weight: 600; color: #666; }
-        #tableContainer { width: 100%; overflow-x: auto; margin-top: 25px; border-radius: 8px; border: 1px solid #eee; }
-        table { width: 100%; border-collapse: collapse; background: white; min-width: 100%; }
+        button { background: var(--primary); color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; }
+        button:disabled { background: #ccc; }
+        #tableContainer { width: 100%; overflow-x: auto; margin-top: 25px; }
+        table { width: 100%; border-collapse: collapse; background: white; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background-color: #f8f9fa; }
     </style>
 </head>
 <body>
 
 <div class="card">
     <h2>📊 이미지 표 분석 변환기</h2>
-    <p>이미지를 업로드하면 AI가 표 코드로 변환합니다. (v1.5)</p>
+    <p>이미지를 업로드하면 AI가 표 코드로 변환합니다. (v1.6)</p>
     <input type="file" id="imageInput" accept="image/*">
     <button id="convertBtn" onclick="runAnalysis()">AI 분석 시작</button>
-    <div id="status"></div>
+    <div id="status" style="margin-top:15px; text-align:center; font-weight:600;"></div>
     <div id="tableContainer"></div>
 </div>
 
 <script type="importmap">
-  {
-    "imports": {
-      "@google/generative-ai": "https://esm.run/@google/generative-ai"
-    }
-  }
+  { "imports": { "@google/generative-ai": "https://esm.run/@google/generative-ai" } }
 </script>
 
 <script type="module">
     import { GoogleGenerativeAI } from "@google/generative-ai";
 
-    // 💡 [중요] 리퍼러 제한(image_cd6fab.png)을 건 키를 여기에 넣으세요.
+    // 💡 리퍼러 제한(image_cd6fab.png)을 건 키를 여기에 정확히 넣으세요.
     const API_KEY = "AIzaSyCq2FeS2HfHFOSsHCmXPAzkDmLebb_ZOO0"; 
     const genAI = new GoogleGenerativeAI(API_KEY);
 
@@ -55,15 +46,12 @@
         if (!fileInput.files[0]) return alert("이미지 파일을 선택하세요.");
 
         btn.disabled = true;
-        status.innerHTML = "⌛ AI가 표 구조를 분석 중입니다... (최대 1분 소요)";
+        status.innerHTML = "⌛ AI가 표 구조를 분석 중입니다...";
         container.innerHTML = "";
 
         try {
-            // [핵심] apiVersion을 명시적으로 v1으로 고정하여 404 에러를 차단합니다.
-            const model = genAI.getGenerativeModel(
-                { model: "gemini-1.5-flash" },
-                { apiVersion: "v1" }
-            );
+            // [수정] 404 에러 방지를 위해 추가 옵션 없이 모델명만 짧게 씁니다.
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
             const file = fileInput.files[0];
             const base64Data = await new Promise((resolve) => {
@@ -72,25 +60,19 @@
                 reader.readAsDataURL(file);
             });
 
-            const imagePart = {
-                inlineData: { data: base64Data, mimeType: file.type }
-            };
+            const result = await model.generateContent([
+                "이미지의 표 데이터를 추출해서 HTML <table> 구조로 응답해줘. 설명 없이 코드만 줘.",
+                { inlineData: { data: base64Data, mimeType: file.type } }
+            ]);
 
-            const prompt = "이미지의 표 데이터를 추출해서 HTML <table> 구조로 응답해줘. 설명 없이 코드만 줘.";
-            
-            const result = await model.generateContent([prompt, imagePart]);
-            const response = await result.response;
-            const text = response.text();
-
-            // 마크다운 태그 제거 후 HTML 주입
-            const cleanHtml = text.replace(/```html|```/g, "").trim();
-            container.innerHTML = cleanHtml;
+            const text = result.response.text();
+            container.innerHTML = text.replace(/```html|```/g, "").trim();
             status.innerHTML = "✅ 분석 완료!";
             
         } catch (error) {
-            console.error("Error Details:", error);
-            status.innerHTML = "❌ 분석 중 오류 발생";
-            alert("시스템 메시지: " + error.message);
+            console.error("Error:", error);
+            status.innerHTML = "❌ 오류 발생";
+            alert("사유: " + error.message);
         } finally {
             btn.disabled = false;
         }
