@@ -3,25 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>이미지 표 분석 변환기 v1.3</title>
+    <title>이미지 표 분석 변환기 v1.4</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f4f7f6; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 800px; margin: auto; }
-        button { background: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; }
-        button:disabled { background: #ccc; }
-        #status { margin-top: 15px; text-align: center; font-weight: bold; color: #555; }
-        #tableContainer { margin-top: 20px; overflow-x: auto; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background: #eee; }
+        :root { --primary: #4A90E2; --bg: #f4f7f6; }
+        body { font-family: -apple-system, sans-serif; padding: 20px; background: var(--bg); color: #333; line-height: 1.6; }
+        .card { background: white; padding: 24px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); max-width: 800px; margin: 0 auto 20px; }
+        h2 { margin-top: 0; border-bottom: 2px solid var(--bg); padding-bottom: 10px; }
+        input[type="file"] { margin: 20px 0; width: 100%; border: 1px dashed #ccc; padding: 20px; border-radius: 8px; cursor: pointer; }
+        button { background: var(--primary); color: white; border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; transition: 0.2s; }
+        button:hover { background: #357ABD; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        #status { margin-top: 15px; text-align: center; font-weight: 600; color: #666; }
+        #tableContainer { width: 100%; overflow-x: auto; margin-top: 25px; border-radius: 8px; border: 1px solid #eee; }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f8f9fa; }
     </style>
 </head>
 <body>
 
 <div class="card">
     <h2>📊 이미지 표 분석 변환기</h2>
-    <input type="file" id="imageInput" accept="image/*" style="margin: 20px 0; width: 100%;">
-    <button id="convertBtn" onclick="run()">분석 시작</button>
+    <p>식단표나 시설 관리 이미지를 업로드하세요. (v1.4)</p>
+    <input type="file" id="imageInput" accept="image/*">
+    <button id="convertBtn" onclick="runAnalysis()">AI 분석 시작</button>
     <div id="status"></div>
     <div id="tableContainer"></div>
 </div>
@@ -37,46 +42,59 @@
 <script type="module">
     import { GoogleGenerativeAI } from "@google/generative-ai";
 
-    // 💡 새로 발급받은 API 키를 여기에 정확히 넣어주세요 (공백 주의)
-    const API_KEY = "AIzaSyCORaXGMV_qXdGvIHKSwW7NRVUiVj0kXn0"; 
+    // 💡 [중요] 새로 발급받은 API 키를 정확히 입력하세요.
+    const API_KEY = "AIzaSyBP9Lr4cXC9ODlJ9aJ0DMhcWjPWfBFz59w"; 
     const genAI = new GoogleGenerativeAI(API_KEY);
 
-    window.run = async () => {
+    window.runAnalysis = async () => {
         const fileInput = document.getElementById('imageInput');
-        if (!fileInput.files[0]) return alert("파일을 선택해주세요.");
-
         const status = document.getElementById('status');
         const btn = document.getElementById('convertBtn');
-        
-        status.innerText = "⌛ AI 분석 중... (최대 1분 소요)";
+        const container = document.getElementById('tableContainer');
+
+        if (!fileInput.files[0]) return alert("이미지 파일을 선택하세요.");
+
         btn.disabled = true;
+        status.innerHTML = "⌛ AI가 분석 중입니다... (최대 1분 소요)";
+        container.innerHTML = "";
 
         try {
-            // [핵심] 404 에러 방지를 위해 표준 명칭만 사용합니다.
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-            
-            const reader = new FileReader();
-            reader.readAsDataURL(fileInput.files[0]);
-            reader.onload = async () => {
-                const base64Data = reader.result.split(',')[1];
-                const imagePart = { inlineData: { data: base64Data, mimeType: fileInput.files[0].type } };
-                
-                const prompt = "이미지의 표 내용을 추출해서 HTML <table> 코드로만 응답해줘.";
-                const result = await model.generateContent([prompt, imagePart]);
-                const text = result.response.text();
-                
-                const cleanHtml = text.replace(/```html|```/g, "").trim();
-                document.getElementById('tableContainer').innerHTML = cleanHtml;
-                status.innerText = "✅ 변환 완료!";
-                btn.disabled = false;
+            // [핵심 수정] apiVersion을 "v1"으로 강제 지정하여 404 에러를 방지합니다.
+            const model = genAI.getGenerativeModel(
+                { model: "gemini-1.5-flash" },
+                { apiVersion: "v1" }
+            );
+
+            const file = fileInput.files[0];
+            const base64Data = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.readAsDataURL(file);
+            });
+
+            const imagePart = {
+                inlineData: { data: base64Data, mimeType: file.type }
             };
-        } catch (e) {
-            console.error(e);
-            alert("에러 발생: " + e.message);
-            status.innerText = "❌ 실패";
+
+            const prompt = "이미지 속의 표 데이터를 추출해서 HTML <table> 구조로 응답해줘. 설명 없이 코드만 줘.";
+            
+            const result = await model.generateContent([prompt, imagePart]);
+            const response = await result.response;
+            const text = response.text();
+
+            const cleanHtml = text.replace(/```html|```/g, "").trim();
+            container.innerHTML = cleanHtml;
+            status.innerHTML = "✅ 분석 완료!";
+            
+        } catch (error) {
+            console.error("Error:", error);
+            status.innerHTML = "❌ 오류 발생";
+            alert("에러 내용: " + error.message);
+        } finally {
             btn.disabled = false;
         }
-    }
+    };
 </script>
+
 </body>
 </html>
