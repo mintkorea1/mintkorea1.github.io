@@ -3,24 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>이미지 표 분석 변환기 v1.2</title>
+    <title>이미지 표 분석 변환기 v1.3</title>
     <style>
         body { font-family: sans-serif; padding: 20px; background: #f4f7f6; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 800px; margin: auto; }
-        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        button { background: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; }
         button:disabled { background: #ccc; }
+        #status { margin-top: 15px; text-align: center; font-weight: bold; color: #555; }
         #tableContainer { margin-top: 20px; overflow-x: auto; }
         table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background: #eee; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>📊 이미지 표 변환기</h2>
-    <input type="file" id="imageInput" accept="image/*">
+    <h2>📊 이미지 표 분석 변환기</h2>
+    <input type="file" id="imageInput" accept="image/*" style="margin: 20px 0; width: 100%;">
     <button id="convertBtn" onclick="run()">분석 시작</button>
-    <p id="status"></p>
+    <div id="status"></div>
     <div id="tableContainer"></div>
 </div>
 
@@ -35,20 +37,9 @@
 <script type="module">
     import { GoogleGenerativeAI } from "@google/generative-ai";
 
-    // 💡 방금 만드신 새 API 키를 반드시 여기에 넣어주세요!
-    const API_KEY = "AIzaSyCORaXGMV_qXdGvIHKSwW7NRVUiVj0kXn0";
+    // 💡 새로 발급받은 API 키를 여기에 정확히 넣어주세요 (공백 주의)
+    const API_KEY = "AIzaSyCORaXGMV_qXdGvIHKSwW7NRVUiVj0kXn0"; 
     const genAI = new GoogleGenerativeAI(API_KEY);
-
-    async function fileToGenerativePart(file) {
-        const base64EncodedDataPromise = new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result.split(',')[1]);
-            reader.readAsDataURL(file);
-        });
-        return {
-            inlineData: { data: await base64EncodedDataPromise, mimeType: file.type },
-        };
-    }
 
     window.run = async () => {
         const fileInput = document.getElementById('imageInput');
@@ -57,27 +48,32 @@
         const status = document.getElementById('status');
         const btn = document.getElementById('convertBtn');
         
-        status.innerText = "⌛ AI 분석 중...";
+        status.innerText = "⌛ AI 분석 중... (최대 1분 소요)";
         btn.disabled = true;
 
         try {
-            // [중요] 404 에러를 방지하기 위해 'models/'를 생략한 표준 명칭만 사용합니다.
+            // [핵심] 404 에러 방지를 위해 표준 명칭만 사용합니다.
             const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-            const imagePart = await fileToGenerativePart(fileInput.files[0]);
             
-            const prompt = "표를 HTML <table> 구조로 변환해줘.";
-            const result = await model.generateContent([prompt, imagePart]);
-            
-            const text = result.response.text();
-            const cleanHtml = text.replace(/```html|```/g, "").trim();
-            
-            document.getElementById('tableContainer').innerHTML = cleanHtml;
-            status.innerText = "✅ 완료!";
+            const reader = new FileReader();
+            reader.readAsDataURL(fileInput.files[0]);
+            reader.onload = async () => {
+                const base64Data = reader.result.split(',')[1];
+                const imagePart = { inlineData: { data: base64Data, mimeType: fileInput.files[0].type } };
+                
+                const prompt = "이미지의 표 내용을 추출해서 HTML <table> 코드로만 응답해줘.";
+                const result = await model.generateContent([prompt, imagePart]);
+                const text = result.response.text();
+                
+                const cleanHtml = text.replace(/```html|```/g, "").trim();
+                document.getElementById('tableContainer').innerHTML = cleanHtml;
+                status.innerText = "✅ 변환 완료!";
+                btn.disabled = false;
+            };
         } catch (e) {
             console.error(e);
             alert("에러 발생: " + e.message);
             status.innerText = "❌ 실패";
-        } finally {
             btn.disabled = false;
         }
     }
